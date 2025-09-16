@@ -1,4 +1,6 @@
 import PedidoDeclaracao from '../models/PedidoDeclaracaoModel';
+import Aluno from '../models/AlunoModel';
+import TipoDeclaracao from '../models/TipoDeclaracaoModel';
 
 const get = async (req, res) => {
   try {
@@ -24,6 +26,38 @@ const get = async (req, res) => {
         data: [],
       });
     }
+
+    return res.status(200).send({
+      type: 'success',
+      message: 'Registro carregado com sucesso',
+      data: response,
+    });
+  } catch (error) {
+    return res.status(501).send({
+      type: 'error',
+      message: 'Ops! Ocorreu um erro',
+      error: error.message,
+    });
+  }
+};
+
+const getDetalhesPedidos = async (req, res) => {
+  try {
+    const response = await PedidoDeclaracao.findAll({
+      include: [
+        {
+          model: Aluno,
+          as: 'aluno',
+          attributes: ['id', 'nome', 'matricula'],
+        },
+        {
+          model: TipoDeclaracao,
+          as: 'tipoDeclaracao',
+          attributes: ['id', 'tipo'],
+        },
+      ],
+      order: [['id', 'DESC']],
+    });
 
     return res.status(200).send({
       type: 'success',
@@ -134,6 +168,7 @@ const destroy = async (req, res) => {
 
 export default {
   get,
+  getDetalhesPedidos,
   persist,
   destroy,
 };

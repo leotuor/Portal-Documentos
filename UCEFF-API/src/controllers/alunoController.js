@@ -98,6 +98,42 @@ const persist = async (req, res) => {
   }
 };
 
+const generateAluno = async (req, res) => {
+  try {
+    const url = 'https://www.4devs.com.br/ferramentas_online.php';
+    const body = new URLSearchParams({
+      acao: 'gerar_pessoa',
+      sexo: 'H',
+      pontuacao: 'N',
+      idade: '0',
+      cep_estado: '',
+      txt_qtde: '1',
+      cep_cidade: '',
+    });
+
+    const pessoas = await fetch(url, {
+      method: 'POST',
+      body,
+    });
+    const data = await pessoas.text();
+    const pessoa = JSON.parse(data)[0];
+
+    const { nome, data_nasc: dataSemFormat } = pessoa;
+    const [day, month, year] = dataSemFormat.split('/');
+    const dataNascimento = `${year}-${month}-${day}`;
+
+    const matriculaGerada = Math.floor(Math.random() * 1e14).toString().padStart(14, '0');
+
+    return await create({ nome, dataNascimento, matricula: matriculaGerada }, res);
+  } catch (error) {
+    return res.status(500).send({
+      type: 'error',
+      message: 'Erro ao gerar dados do aluno',
+      error: error.message,
+    });
+  }
+};
+
 const destroy = async (req, res) => {
   try {
     const id = req.params.id ? req.params.id.toString().replace(/\D/g, '') : null;
@@ -138,4 +174,5 @@ export default {
   get,
   persist,
   destroy,
+  generateAluno,
 };

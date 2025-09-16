@@ -5,7 +5,7 @@
       dark 
       elevation="4" 
       height="80"
-      class="university-header"
+      class="faculdade-header"
     >
       <v-container>
         <v-row align="center" no-gutters>
@@ -18,6 +18,52 @@
             <v-toolbar-title class="text-h5 font-weight-bold">
               Portal Acadêmico
             </v-toolbar-title>
+          </v-col>
+          <v-spacer></v-spacer>
+          <v-col cols="auto">
+            <v-menu
+              v-model="usuarioDropdown"
+              location="bottom end"
+              offset="10"
+            >
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon
+                  color="white"
+                  v-bind="props"
+                >
+                  <v-icon size="55">mdi-account-circle</v-icon>
+                </v-btn>
+              </template>
+              
+              <v-card min-width="250" max-width="300" class="elevation-8">
+                <v-card-title class="text-h6 font-weight-bold pa-4" style="background-color: #fa700c; color: white;">
+                  <v-icon left class="mr-2" color="white">mdi-account</v-icon>
+                  Usuário
+                </v-card-title>
+                <v-card-text class="pa-4">
+                  <v-list dense>
+                    <v-list-item>
+                      <v-list-item-title>
+                        Aluno: {{ alunoLogado.nome || 'Não Logado' }}
+                      </v-list-item-title>
+                    </v-list-item>
+                    <v-list-item @click="gerarAluno">
+                      <v-list-item-title>
+                        <v-icon left class="mr-2">mdi-account-edit</v-icon>
+                        Gerar Perfil
+                      </v-list-item-title>
+                    </v-list-item>
+                    <v-list-item @click="listarUsuarios">
+                      <v-list-item-title>
+                        <v-icon left class="mr-2">mdi-logout</v-icon>
+                        Alterar Usuário
+                      </v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-card-text>
+              </v-card>
+            </v-menu>
           </v-col>
         </v-row>
       </v-container>
@@ -68,10 +114,10 @@
       <v-card class="rounded-lg">
         <v-card-title class="d-flex align-center white--text pa-6" style="background-color: #fa700c;">
           <v-btn
-            v-if="showForm"
+            v-if="telaRequisicao"
             icon
             variant="text"
-            @click="goBack"
+            @click="voltar"
             class="mr-3"
             color="white"
           >
@@ -90,7 +136,7 @@
         </v-card-title>
 
         <v-card-text class="pa-8">
-          <div v-if="!showForm">
+          <div v-if="!telaRequisicao">
             <p class="text-h6 text-grey-darken-1 mb-6 text-center">
               Selecione o tipo de documento acadêmico que deseja solicitar:
             </p>
@@ -101,8 +147,8 @@
                 cols="12"
               >
                 <v-card
-                  @click="selectDocument(option)"
-                  class="document-option elevation-2 transition-swing"
+                  @click="selecionarDocumento(option)"
+                  class="opcao-documento elevation-2 transition-swing"
                   hover
                 >
                   <v-card-text class="pa-4">
@@ -128,61 +174,20 @@
 
           <div v-else>
             <div class="text-center mb-6">
-              <v-avatar size="80" :color="selectedDocument.color" class="white--text mb-4">
-                <v-icon size="40">{{ selectedDocument.icon }}</v-icon>
+              <v-avatar size="80" :color="documentoSelecionado.color" class="white--text mb-4">
+                <v-icon size="40">{{ documentoSelecionado.icon }}</v-icon>
               </v-avatar>
-              <h3 class="text-h5 font-weight-bold text-primary">{{ selectedDocument.title }}</h3>
+              <h3 class="text-h5 font-weight-bold text-primary">{{ documentoSelecionado.title }}</h3>
               <p class="text-body-1 text-grey-darken-1">Preencha os dados necessários para sua solicitação</p>
             </div>
-            
-            <v-form ref="form" v-model="formValid">
-              <v-text-field
-                v-model="form.field1"
-                :label="formFields.field1"
-                :rules="[rules.required]"
-                variant="outlined"
-                class="mb-4"
-                prepend-inner-icon="mdi-account"
-              ></v-text-field>
-
-              <v-text-field
-                v-model="form.field2"
-                :label="formFields.field2"
-                :rules="[rules.required]"
-                variant="outlined"
-                class="mb-4"
-                prepend-inner-icon="mdi-calendar"
-              ></v-text-field>
-
-              <v-textarea
-                v-model="form.field3"
-                :label="formFields.field3"
-                :rules="[rules.required]"
-                variant="outlined"
-                rows="3"
-                class="mb-4"
-                prepend-inner-icon="mdi-text"
-              ></v-textarea>
-            </v-form>
           </div>
         </v-card-text>
 
-        <v-card-actions v-if="showForm" class="pa-6 pt-0">
-          <v-btn
-            color="grey-darken-1"
-            variant="text"
-            size="large"
-            @click="goBack"
-            class="mr-4"
-          >
-            <v-icon left>mdi-arrow-left</v-icon>
-            Voltar
-          </v-btn>
+        <v-card-actions v-if="telaRequisicao" class="pa-6 pt-0">
           <v-spacer></v-spacer>
           <v-btn
             color="#fa700c"
-            :disabled="!formValid"
-            @click="submitForm"
+            @click="enviarSolicitacao"
             size="large"
             elevation="2"
           >
@@ -193,6 +198,52 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="usuariosLista" max-width="800" persistent>
+      <v-card class="rounded-lg">
+        <v-card-title class="d-flex align-center white--text pa-6" style="background-color: #fa700c;">
+          <div class="text-h5 font-weight-bold">Lista de Usuários</div>
+          <v-spacer></v-spacer>
+          <v-btn
+            icon
+            variant="text"
+            @click="usuariosLista = false"
+            color="white"
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+
+        <v-card-text class="pa-6">
+          <v-data-table
+            :headers="usuariosHeaders"
+            :items="usuarios"
+            :loading="loadingUsuarios"
+            item-value="id"
+            class="elevation-1"
+          >
+            <template v-slot:item.actions="{ item }">
+              <v-btn
+                color="#fa700c"
+                variant="text"
+                size="small"
+                @click="selecionarUsuario(item)"
+              >
+                <v-icon left>mdi-account-switch</v-icon>
+                Selecionar
+              </v-btn>
+            </template>
+            
+            <template v-slot:no-data>
+              <div class="text-center pa-4">
+                <v-icon size="48" color="grey">mdi-account-off</v-icon>
+                <p class="text-h6 mt-2">Nenhum usuário encontrado</p>
+              </div>
+            </template>
+          </v-data-table>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar
       v-model="snackbar"
       color="success"
@@ -200,7 +251,7 @@
       location="top"
     >
       <v-icon left class="mr-2">mdi-check-circle</v-icon>
-      Solicitação enviada com sucesso! Você receberá um e-mail de confirmação.
+      Solicitação enviada com sucesso!
       <template v-slot:actions>
         <v-btn
           variant="text"
@@ -218,15 +269,25 @@ export default {
   data() {
     return {
       dialog: false,
-      showForm: false,
-      formValid: false,
+      telaRequisicao: false,
       snackbar: false,
-      selectedDocument: null,
-      form: {
-        field1: '',
-        field2: '',
-        field3: ''
+      usuarioDropdown: false,
+      usuariosLista: false,
+      usuarios: [],
+      alunoLogado: {
+        id: null,
+        nome: null,
+        dataNascimento: null,
+        matricula: null,
       },
+      usuariosHeaders: [
+        { title: 'ID', key: 'id', sortable: true },
+        { title: 'Nome', key: 'nome', sortable: true },
+        { title: 'Matrícula', key: 'matricula', sortable: true },
+        { title: 'Data de Nascimento', key: 'dataNascimento', sortable: true },
+        { title: 'Ações', key: 'actions', sortable: false, align: 'center' }
+      ],
+      documentoSelecionado: null,
       opcoesDocumentos: [
         {
           value: 'matricula',
@@ -258,84 +319,125 @@ export default {
   
   computed: {
     dialogTitle() {
-      if (!this.showForm) {
+      if (!this.telaRequisicao) {
         return 'Solicitar Documento';
       }
-      return this.selectedDocument ? this.selectedDocument.title : 'Formulário';
     },
-    
-    formFields() {
-      if (!this.selectedDocument) return {};
-      
-      const fields = {
-        matricula: {
-          field1: 'Número de Matrícula',
-          field2: 'Curso/Programa',
-          field3: 'Finalidade do Documento'
-        },
-        conclusao: {
-          field1: 'Nome Completo',
-          field2: 'Curso Concluído',
-          field3: 'Finalidade/Observações'
-        },
-        frequencia: {
-          field1: 'Período de Referência',
-          field2: 'Disciplinas/Semestre',
-          field3: 'Justificativa da Solicitação'
-        }
-      };
-      
-      return fields[this.selectedDocument.value] || {};
-    }
   },
 
   methods: {
     openDialog() {
       this.dialog = true;
-      this.showForm = false;
-      this.resetForm();
+      this.telaRequisicao = false;
     },
     
     closeDialog() {
       this.dialog = false;
-      this.showForm = false;
-      this.selectedDocument = null;
-      this.resetForm();
+      this.telaRequisicao = false;
+      this.documentoSelecionado = null;
     },
     
-    selectDocument(option) {
-      this.selectedDocument = option;
-      this.showForm = true;
+    selecionarDocumento(option) {
+      this.documentoSelecionado = option;
+      this.telaRequisicao = true;
     },
     
-    goBack() {
-      this.showForm = false;
-      this.resetForm();
+    voltar() {
+      this.telaRequisicao = false;
     },
-    
-    resetForm() {
-      this.form = {
-        field1: '',
-        field2: '',
-        field3: ''
-      };
-      this.formValid = false;
-      if (this.$refs.form) {
-        this.$refs.form.resetValidation();
-      }
-    },
-    
-    submitForm() {
-      if (this.formValid) {
-        console.log('Form submitted:', {
-          documentType: this.selectedDocument.value,
-          data: this.form
+
+    async enviarSolicitacao() {
+      try {
+        if (!this.alunoLogado.nome || !this.alunoLogado.dataNascimento || !this.alunoLogado.matricula) {
+          alert('É Necessario estar logado para requisitar um documento.');
+          return;
+        }
+        const documentTypeMap = {
+          'matricula': 1,
+          'conclusao': 2,
+          'frequencia': 3
+        };
+
+        const response = await fetch('http://localhost:3333/pedido-declaracao/persist', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            idTipoDeclaracao: documentTypeMap[this.documentoSelecionado.value],
+            idAluno: this.alunoLogado.id
+          })
         });
-        
+        const preDestruct = await response.json();
+        const data = preDestruct.data;
+        console.log(data);
         this.snackbar = true;
-        this.closeDialog();
+        this.telaRequisicao = false;
+      } catch (error) {
+        console.error(error);
+        alert('Erro ao enviar solicitação. Tente novamente mais tarde.');
       }
-    }
+    },
+
+    async gerarAluno(){
+      try {
+        const response = await fetch('http://localhost:3333/aluno/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+        });
+        const preDestruct = await response.json();
+        const data = preDestruct.data;
+        this.alunoLogado = {
+          id: this.alunoLogado.id,
+          nome: data.nome,
+          dataNascimento: data.dataNascimento,
+          matricula: data.matricula
+        };
+      } catch (error) {
+        console.error('Erro ao gerar aluno:', error);
+      }
+    },
+
+    async listarUsuarios() {
+      this.usuarioDropdown = false;
+      this.usuariosLista = true;
+      this.loadingUsuarios = true;
+      
+      try {
+        const response = await fetch('http://localhost:3333/aluno', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          this.usuarios = result.data || [];
+        } else {
+          console.error('Erro ao carregar usuários');
+          this.usuarios = [];
+        }
+      } catch (error) {
+        console.error('Erro na requisição:', error);
+        this.usuarios = [];
+      } finally {
+        this.loadingUsuarios = false;
+      }
+    },
+
+    selecionarUsuario(usuario) {
+      this.alunoLogado = {
+        id: usuario.id,
+        nome: usuario.nome,
+        dataNascimento: usuario.dataNascimento,
+        matricula: usuario.matricula
+      };
+      this.usuariosLista = false;
+      console.log('Usuário selecionado:', usuario);
+    },
   }
 };
 </script>
@@ -346,18 +448,18 @@ export default {
   background: linear-gradient(135deg, #fa700c 0%, #ffdb03 100%);
 }
 
-.university-header {
+.faculdade-header {
   background: linear-gradient(135deg, #fa700c 0%, #e65a00 100%) !important;
 }
 
-.document-option {
+.opcao-documento {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 2px solid transparent;
   margin-bottom: 16px;
 }
 
-.document-option:hover {
+.opcao-documento:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   border-color: #fa700c;
@@ -373,6 +475,7 @@ export default {
 
 .v-card {
   border-radius: 12px !important;
+  animation: fadeInUp 0.6s ease-out;
 }
 
 .v-btn {
@@ -395,12 +498,8 @@ export default {
   }
 }
 
-.v-card {
-  animation: fadeInUp 0.6s ease-out;
-}
-
 @media (max-width: 768px) {
-  .university-header .v-toolbar-title {
+  .faculdade-header .v-toolbar-title {
     font-size: 1.25rem !important;
   }
   

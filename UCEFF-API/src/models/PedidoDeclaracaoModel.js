@@ -4,7 +4,7 @@ import Aluno from './AlunoModel';
 import TipoDeclaracao from './TipoDeclaracaoModel';
 
 const PedidoDeclaracao = sequelize.define(
-  'pedido_declaracao',
+  'pedidos_declaracoes',
   {
     id: {
       type: DataTypes.INTEGER,
@@ -20,7 +20,7 @@ const PedidoDeclaracao = sequelize.define(
   },
 );
 PedidoDeclaracao.belongsTo(Aluno, {
-  as: 'Aluno',
+  as: 'aluno',
   onDelete: 'no action',
   onUpdate: 'no action',
   foreignKey: {
@@ -31,7 +31,7 @@ PedidoDeclaracao.belongsTo(Aluno, {
 });
 
 PedidoDeclaracao.belongsTo(TipoDeclaracao, {
-  as: 'TipoDeclaracao',
+  as: 'tipoDeclaracao',
   onDelete: 'no action',
   onUpdate: 'no action',
   foreignKey: {
