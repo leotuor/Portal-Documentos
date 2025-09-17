@@ -60,6 +60,12 @@
                         Alterar Usuário
                       </v-list-item-title>
                     </v-list-item>
+                    <v-list-item @click="$router.push('/listaPedidos')">
+                      <v-list-item-title>
+                          <v-icon left class="mr-2">mdi-format-list-bulleted</v-icon>
+                        Lista de Pedidos
+                      </v-list-item-title>
+                    </v-list-item>
                   </v-list>
                 </v-card-text>
               </v-card>

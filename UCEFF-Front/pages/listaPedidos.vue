@@ -16,7 +16,7 @@
           </v-col>
           <v-col>
             <v-toolbar-title class="text-h5 font-weight-bold">
-              Portal Acadêmico - Lista de Pedidos
+              Lista de Pedidos
             </v-toolbar-title>
           </v-col>
           <v-spacer></v-spacer>
@@ -43,14 +43,59 @@
                 <v-icon size="40" class="mr-4" color="white">mdi-file-document-multiple</v-icon>
                 <div>
                   <div class="text-h4 font-weight-bold">Lista de Pedidos</div>
-                  <div class="text-subtitle-1">Acompanhe suas solicitações de documentos</div>
                 </div>
               </v-card-title>
 
               <v-card-text class="pa-6">
+                <v-row>
+                  <v-col cols="12" md="4">
+                    <v-autocomplete
+                      v-model="filtroTipo"
+                      :items="opcoesFiltragem"
+                      item-title="label"
+                      item-value="value"
+                      label="Selecionar Tipo de Filtro"
+                      variant="outlined"
+                      clearable
+                      prepend-inner-icon="mdi-tune"
+                      color="#fa700c"
+                      class="mb-4"
+                    ></v-autocomplete>
+                  </v-col>
+                  <v-col v-if="filtroTipo === 'tipo'">
+                    <v-autocomplete
+                      v-model="filtroDado"
+                      :items="listaTiposDeclaracao"
+                      item-title="tipo"
+                      item-value="tipo"
+                      label="Filtrar por Tipo de Documento"
+                      variant="outlined"
+                      clearable
+                      prepend-inner-icon="mdi-filter"
+                      color="#fa700c"
+                      class="mb-4"
+                    ></v-autocomplete>
+                  </v-col>
+                  <v-col v-if="filtroTipo === 'mes'">
+                    <v-autocomplete
+                      v-model="filtroDado"
+                      :items="mesesAno"
+                      item-title="label"
+                      item-value="value"
+                      label="Filtrar por Mês"
+                      variant="outlined"
+                      clearable
+                      prepend-inner-icon="mdi-calendar-month"
+                      color="#fa700c"
+                      class="mb-4"
+                    ></v-autocomplete>
+                  </v-col>
+                </v-row>
                 <v-data-table
                   :headers="headersDocumentos"
                   :items="pedidos"
+                  :search="filtroDado"
+                  :custom-filter="customFilter"
                   item-value="id"
                   class="elevation-1"
                   :items-per-page="10"
@@ -64,6 +109,36 @@
                       <v-icon left size="16">{{ obterIconeDocumento(item.tipoDocumento) }}</v-icon>
                       {{ item.tipoDocumento }}
                     </v-chip>
+                  </template>
+
+                  <template v-slot:item.actions="{ item }">
+                    <div class="d-flex gap-2">
+                      <v-btn
+                        icon
+                        size="small"
+                        color="#fa700c"
+                        variant="text"
+                        @click="toggleDialogEditarPedido(item)"
+                      >
+                        <v-icon size="20">mdi-pencil</v-icon>
+                        <v-tooltip activator="parent" location="top">
+                          Editar
+                        </v-tooltip>
+                      </v-btn>
+                      
+                      <v-btn
+                        icon
+                        size="small"
+                        color="red"
+                        variant="text"
+                        @click="excluirPedido(item)"
+                      >
+                        <v-icon size="20">mdi-delete</v-icon>
+                        <v-tooltip activator="parent" location="top">
+                          Excluir
+                        </v-tooltip>
+                      </v-btn>
+                    </div>
                   </template>
 
                   <template v-slot:item.dataPedido="{ item }">
@@ -83,30 +158,129 @@
         </v-row>
       </v-container>
     </v-main>
+
+    <v-dialog v-model="editDialog" max-width="500px">
+      <v-card>
+        <v-card-title style="background-color: #fa700c; color: white;">
+          Editar Pedido
+        </v-card-title>
+        
+        <v-card-text class="pa-4">
+          <v-autocomplete
+            v-model="itemEditavel.aluno"
+            :items="listaAlunos"
+            item-title="nome"
+            item-value="id"
+            label="Aluno"
+            variant="outlined"
+          ></v-autocomplete>
+
+          <v-autocomplete
+            v-model="itemEditavel.tipo"
+            :items="listaTiposDeclaracao"
+            item-title="tipo"
+            item-value="id"
+            label="Tipo de Documento"
+            variant="outlined"
+          ></v-autocomplete>
+        </v-card-text>
+    
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn @click="editDialog = false">Cancelar</v-btn>
+          <v-btn color="#fa700c" @click="salvarEdicao">Salvar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <script>
+
 export default {
   name: 'ListaPedidos',
   data() {
     return {
       pedidos: [],
+      editDialog: false,
+      listaAlunos: [],
+      listaTiposDeclaracao: [],
+      filtroTipo: null,
+      filtroDado: null,
+      itemEditavel: { 
+        id: null,
+        aluno: '',
+        tipo: '',
+      },
       headersDocumentos: [
         { title: 'ID', key: 'id', sortable: true, width: '80px' },
-        { title: 'Tipo de Documento', key: 'tipoDocumento', sortable: true },
+        { title: 'Tipo de Documento', key: 'tipoDeclaracao.tipo', sortable: true },
         { title: 'Aluno', key: 'aluno.nome', sortable: true },
         { title: 'Matricula', key: 'aluno.matricula', sortable: true },
-        { title: 'Data do Pedido', key: 'dataPedido', sortable: true }
-      ]
+        { title: 'Data do Pedido', key: 'dataFormatada', sortable: true },
+        { title: 'Ações', key: 'actions', sortable: false, width: '120px' }
+      ],
+      mesesAno: [
+        { value: '01', label: 'Janeiro' },
+        { value: '02', label: 'Fevereiro' },
+        { value: '03', label: 'Março' },
+        { value: '04', label: 'Abril' },
+        { value: '05', label: 'Maio' },
+        { value: '06', label: 'Junho' },
+        { value: '07', label: 'Julho' },
+        { value: '08', label: 'Agosto' },
+        { value: '09', label: 'Setembro' },
+        { value: '10', label: 'Outubro' },
+        { value: '11', label: 'Novembro' },
+        { value: '12', label: 'Dezembro' }
+      ],
+      opcoesFiltragem: [
+        { value: 'tipo', label: 'Filtrar por Tipo de Documento' },
+        { value: 'mes', label: 'Filtrar por Mês' }
+      ],
     };
   },
 
-  created() {
+  beforeMount() {
     this.getPedidos();
+    this.getAlunos();
+    this.getTiposDeclaracao();
   },
 
   methods: {
+    async getPedidos() {
+      const response = await fetch('http://localhost:3333/pedido-declaracao/detalhes', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+      });
+      const text = await response.json();
+      this.pedidos = text.data;
+    },
+
+    async getAlunos() {
+      const response = await fetch('http://localhost:3333/aluno', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+      });
+      const text = await response.json();
+      this.listaAlunos = text.data;
+    },
+
+    async getTiposDeclaracao() {
+      const response = await fetch('http://localhost:3333/tipo-declaracao', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+      });
+      const text = await response.json();
+      this.listaTiposDeclaracao = text.data;
+    },
+
     obterCorDocumento(tipo) {
       const cores = {
         'Declaração de Matrícula': 'blue',
@@ -130,21 +304,62 @@ export default {
       return new Date(dataString).toLocaleDateString('pt-BR');
     },
 
-    async getPedidos() {
-      const response = await fetch('http://localhost:3333/pedido-declaracao/detalhes', {
-          method: 'GET',
+    excluirPedido(item) {
+      if (confirm('Tem certeza que deseja excluir este pedido?')) {
+        fetch(`http://localhost:3333/pedido-declaracao/destroy/${item.id}`, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        this.pedidos = data;
-      } else {
-        console.error('Erro ao buscar pedidos:', response.statusText);
+        }).then(() => {
+          this.getPedidos();
+        });
       }
+    },
+
+    toggleDialogEditarPedido(item) {
+      this.itemEditavel = {
+        id: item.id,
+        aluno: item.aluno.id,
+        tipo: item.tipoDeclaracao.id,
+      };
+      this.editDialog = true;
+    },
+
+    customFilter(value, search, item) {
+      if (this.filtroTipo === 'tipo' && item.columns['tipoDeclaracao.tipo'] !== this.filtroDado) {
+        return false;
+      }
+
+      if (this.filtroTipo === 'mes' && this.filtroDado) {
+        const data = item.columns['dataFormatada'];
+        const mes = data.split('/')[1];
+        if (mes !== this.filtroDado) {
+          return false;
+        }
+      }
+
+      return true;
+    },
+
+    async salvarEdicao() {
+      if (!this.itemEditavel.aluno || !this.itemEditavel.tipo) {
+        alert('Por favor, preencha todos os campos!');
+        return;
+      }
+      const body = {
+        idTipoDeclaracao: this.itemEditavel.tipo,
+        idAluno: this.itemEditavel.aluno,
+      };
+      this.editDialog = false;
+      const response = await fetch(`http://localhost:3333/pedido-declaracao/persist/${this.itemEditavel.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+      this.getPedidos();
     }
   }
 };

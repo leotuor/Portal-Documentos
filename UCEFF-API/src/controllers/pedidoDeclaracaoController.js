@@ -59,10 +59,18 @@ const getDetalhesPedidos = async (req, res) => {
       order: [['id', 'DESC']],
     });
 
+    const responseFormatada = response.map((item) => {
+      const itemData = item.toJSON();
+      return {
+        ...itemData,
+        dataFormatada: new Date(itemData.created_at).toLocaleDateString('pt-BR'),
+      };
+    });
+
     return res.status(200).send({
       type: 'success',
       message: 'Registro carregado com sucesso',
-      data: response,
+      data: responseFormatada,
     });
   } catch (error) {
     return res.status(501).send({
