@@ -1,6 +1,6 @@
 # Portal-Documentos
 
-Sistema de gerenciamento de solicitações de declarações acadêmicas para a UCEFF (Universidade do Contestado).
+Sistema de gerenciamento de solicitações de declarações acadêmicas para a UCEFF.
 
 ## 📋 Descrição
 
